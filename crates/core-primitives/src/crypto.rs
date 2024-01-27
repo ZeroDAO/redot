@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-///! Frost DKG and signing implementation
-///
-/// This is a specific implementation of threshold signature, which can be verified in a `no-std` environment,
-/// thus enabling on-chain verification in Substrate. Currently, it does not support generation and signing
-/// in `no-std`. FROST is used as the underlying cryptographic library. FROST is a threshold signature scheme. It allows splitting a Schnorr signing key
-/// into n shares for a threshold t, such that t (or more) participants can together generate a signature
-/// that can be validated by the corresponding verifying key. An important aspect is that the resulting
-/// signature is indistinguishable from a non-threshold signature from the viewpoint of signature
-/// verifiers. You can learn more at [https://frost.zfnd.org/frost.html](https://frost.zfnd.org/frost.html).
+//! Frost DKG and signing implementation
+//!
+//! This is a specific implementation of threshold signature, which can be verified in a `no-std` environment,
+//! thus enabling on-chain verification in Substrate. Currently, it does not support generation and signing
+//! in `no-std`. FROST is used as the underlying cryptographic library. FROST is a threshold signature scheme. It allows splitting a Schnorr signing key
+//! into n shares for a threshold t, such that t (or more) participants can together generate a signature
+//! that can be validated by the corresponding verifying key. An important aspect is that the resulting
+//! signature is indistinguishable from a non-threshold signature from the viewpoint of signature
+//! verifiers. You can learn more at [https://frost.zfnd.org/frost.html](https://frost.zfnd.org/frost.html).
 use crate::DkgVerifyingKey;
 use anyhow::{anyhow, Context, Ok, Result};
 use codec::{Decode, Encode, EncodeLike, MaxEncodedLen};

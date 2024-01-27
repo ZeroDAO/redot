@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! A module for managing validator tasks.
+//!
+//! This pallet abstracts validator tasks as metadata, which validators need to reach consensus on.
+//! The module also features the functionality for validator key rotation, allowing validators to rotate their validator keys.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
@@ -144,14 +149,6 @@ pub mod pallet {
 		///
 		/// The dispatch origin for this call must be `Signed` by the account that holds the current
 		/// verifying key.
-		///
-		/// Parameters:
-		/// - `origin`: The origin of the call, which must be signed.
-		/// - `new_key`: The new verifying key to be set.
-		/// - `signature_bytes`: A signature over the new verifying key, created using the old key, to
-		///   authenticate the rotation request.
-		///
-		/// Emits `NewKey` event when successful.
 		#[pallet::call_index(0)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn rotate_key(
@@ -184,12 +181,6 @@ pub mod pallet {
 		/// Add a new metadata entry.
 		///
 		/// The dispatch origin for this call must be `Signed` by the caller.
-		///
-		/// Parameters:
-		/// - `origin`: The origin of the call.
-		/// - `id`: Identifier of the task, must be at most `LastTaskId + 1`.
-		/// - `metadata`: The metadata to be stored, limited by `MaxMetadataLen`.
-		/// - `nonce`: A sequentially increasing number representing the metadata entry.
 		#[pallet::call_index(1)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn new_metadata(
@@ -234,10 +225,6 @@ pub mod pallet {
 		/// Add a new verifying key.
 		///
 		/// The dispatch origin for this call must be `Signed` by the caller.
-		///
-		/// Parameters:
-		/// - `origin`: The origin of the call.
-		/// - `new_key`: The new verifying key to be stored.
 		#[pallet::call_index(2)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn new_key(origin: OriginFor<T>, new_key: [u8; 32]) -> DispatchResultWithPostInfo {

@@ -11,10 +11,8 @@ keywords = ["substrate", "pallet", "macro", "configuration"]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-# rand_core = "0.6.4"
 log = "0.4"
 anyhow = "1.0.66"
-# rand = "0.8.4"
 codec = { package = "parity-scale-codec", version = "3.0.0", features = ["derive"]}
 scale-info = { version = "2.2.0", features = ["derive"] }
 futures = "0.3.21"
@@ -32,21 +30,7 @@ melo-das-db = { git = "https://github.com/ZeroDAO/melodot", branch = "polkadot-v
 # Substrate
 cumulus-primitives-core = { git = "https://github.com/paritytech/cumulus.git", branch = "polkadot-v1.0.0" }
 
-# cumulus-relay-chain-interface = { git = "https://github.com/paritytech/cumulus.git", branch = "polkadot-v1.0.0" }
-# cumulus-primitives-core = { default-features = false, git = "https://github.com/paritytech/cumulus.git", branch = "polkadot-v1.0.0" }
-
 [dev-dependencies]
 serde = { version = "1.0.163" }
 
 [features]
-# default = ["std"]
-# std = [
-# 	"melo-das-db/std",
-# 	"codec/std",
-# 	"scale-info/std",
-# 	"serde/std",
-# 	# "redot-core-primitives/std",
-# 	# "frost-ed25519/std",
-	
-# 	# "cumulus-primitives-core/std",
-# ]

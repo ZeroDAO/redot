@@ -12,6 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! # Validator Registry Pallet
+//!
+//! This pallet provides functionality for managing a registry of validators.
+//! It allows for the registration and updating of validator information, handling both on-chain and off-chain data.
+//! The pallet supports off-chain workers for data processing and employs unsigned transactions with custom validation logic.
+//!
+//! ## Overview
+//!
+//! - **Validator Registration**: Validators can register themselves using an on-chain transaction.
+//! - **Validator Update**: Validator information can be updated, including adding and removing validators.
+//! - **Off-chain Workers**: Employed for processing data off-chain, contributing to scalability.
+//! - **Unsigned Transactions**: Utilized for off-chain communication, with custom validation logic to ensure integrity.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // #[cfg(feature = "runtime-benchmarks")]
@@ -39,14 +52,6 @@ use scale_info::TypeInfo;
 use sp_application_crypto::RuntimeAppPublic;
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
-// use sp_runtime::{
-// 	generic::{DigestItem, Era},
-// 	traits::{BlakeTwo256, Block as BlockT, Header as HeaderT, IdentityLookup},
-// 	transaction_validity::{
-// 		InvalidTransaction, TransactionValidityError, UnknownTransaction, ValidTransaction,
-// 	},
-// 	DispatchError,
-// };
 
 use melo_das_db::offchain::OffchainKv;
 
@@ -80,16 +85,43 @@ impl sp_std::fmt::Debug for OffchainErr {
 // Typedef for results returned by off-chain operations.
 type OffchainResult<A> = Result<A, OffchainErr>;
 
+/// Structure representing information about validator votes.
+///
+/// This struct is used to manage and track the votes for adding or removing validators in the network.
+/// It's a key component for the governance and dynamic management of the validator set.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo, RuntimeDebug)]
 pub struct ValidatorVoteInfo<BlockNumber>
 where
 	BlockNumber: PartialEq + Eq + Decode + Encode,
 {
+	/// List of `ValidatorId`s proposed for removal.
+	///
+	/// This vector contains the identifiers of validators that are suggested to be removed from the validator set.
+	/// A removal vote is typically cast when a validator is deemed to be underperforming or acting maliciously.
 	pub remove: Vec<ValidatorId>,
+
+	/// List of `ValidatorId`s proposed for addition.
+	///
+	/// This vector contains the identifiers of new validators that are suggested to be added to the validator set.
+	/// Adding new validators is crucial for maintaining the network's decentralization and performance.
 	pub add: Vec<ValidatorId>,
+
+	/// Index of the authority submitting this vote.
+	///
+	/// This represents the unique index of the authority (or validator) that is submitting the current vote.
+	/// It's used to identify the source of the vote and to ensure that each authority's vote is accounted for correctly.
 	pub authority_index: AuthIndex,
-	/// Total length of session validator set.
+
+	/// Total length of the session validator set.
+	///
+	/// This field denotes the total number of validators in the current session.
+	/// It's used for validation and to ensure the consistency of the validator set.
 	pub validators_len: u32,
+
+	/// The block number at which these votes are being submitted.
+	///
+	/// This indicates the specific block at which the vote information is relevant.
+	/// It helps in aligning the validator set changes with the blockchain's state and history.
 	pub at_block: BlockNumber,
 }
 
@@ -106,9 +138,6 @@ pub mod pallet {
 		/// This type represents an event in the runtime, which includes events emitted by this
 		/// pallet.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
-		/// This type represents the computation cost of the pallet's operations.
-		// type WeightInfo: WeightInfo;
 
 		/// Defines the upper limit for the number of keys that can be stored.
 		#[pallet::constant]
@@ -136,36 +165,46 @@ pub mod pallet {
 		type MeloUnsignedPriority: Get<TransactionPriority>;
 	}
 
+	/// Storage for tracking the current set of authority keys.
 	#[pallet::storage]
 	#[pallet::getter(fn keys)]
 	pub(super) type Keys<T: Config> =
 		StorageValue<_, WeakBoundedVec<T::AuthorityId, T::MaxKeys>, ValueQuery>;
 
+	/// Storage for tracking pending validator registrations.
+	///
+	/// This storage item maintains a vector of validator identifiers (`ValidatorId`) that are pending
+	/// approval to be added to the validator set.
 	#[pallet::storage]
 	#[pallet::getter(fn pending)]
 	pub(super) type Pending<T: Config> =
 		StorageValue<_, WeakBoundedVec<ValidatorId, T::MaxPending>, ValueQuery>;
 
+	/// Storage for the current set of active validators.
 	#[pallet::storage]
 	#[pallet::getter(fn validators)]
 	pub(super) type Validators<T: Config> =
 		StorageValue<_, WeakBoundedVec<ValidatorId, T::MaxKeys>, ValueQuery>;
 
+	/// Storage for the status of each validator.
 	#[pallet::storage]
 	#[pallet::getter(fn validators_map)]
 	pub(super) type ValidatorsStatus<T: Config> =
 		StorageMap<_, Twox64Concat, ValidatorId, AuthorityStatus, ValueQuery>;
 
+	/// Storage for tracking removal votes for validators.
 	#[pallet::storage]
 	#[pallet::getter(fn remove_vote)]
 	pub(super) type RemoveVote<T: Config> =
 		StorageDoubleMap<_, Twox64Concat, BlockNumberFor<T>, Twox64Concat, ValidatorId, u32>;
 
+	/// Storage for tracking addition votes for validators.
 	#[pallet::storage]
 	#[pallet::getter(fn add_vote)]
 	pub(super) type AddVote<T: Config> =
 		StorageDoubleMap<_, Twox64Concat, BlockNumberFor<T>, Twox64Concat, ValidatorId, u32>;
 
+	/// Storage for validator votes by block number.
 	#[pallet::storage]
 	#[pallet::getter(fn votes)]
 	pub(super) type Votes<T: Config> = StorageMap<
@@ -179,6 +218,7 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// Denotes the successful registration of a new validator ID.
 		VoteReceived {
 			at_block: BlockNumberFor<T>,
 			from: AuthIndex,
@@ -209,6 +249,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Register a new validator ID.
 		#[pallet::call_index(0)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn registry(origin: OriginFor<T>, validator_id: ValidatorId) -> DispatchResult {
@@ -236,6 +277,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Update the validator set.
 		#[pallet::call_index(1)]
 		#[pallet::weight(Weight::from_parts(10_000, 0) + T::DbWeight::get().writes(1))]
 		pub fn update(
@@ -298,18 +340,6 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		// fn on_finalize(now: BlockNumberFor<T>) {
-		// 	// // Deletion of expired polling data
-		// 	// if T::BlockNumber::from(DELAY_CHECK_THRESHOLD + 1) >= now {
-		// 	// 	return;
-		// 	// }
-		// 	// let _ = ValidatorVoteInfo::<T>::clear_prefix(
-		// 	// 	now - (DELAY_CHECK_THRESHOLD + 1).into(),
-		// 	// 	T::MaxBlobNum::get(),
-		// 	// 	None,
-		// 	// );
-		// }
-
 		fn offchain_worker(now: BlockNumberFor<T>) {
 			// Only send messages if we are a potential validator.
 			if sp_io::offchain::is_validator() {
@@ -374,6 +404,7 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
+	/// Fetch the list of validators to add and remove.
 	pub fn fetch_list() -> (Vec<ValidatorId>, Vec<ValidatorId>) {
 		let mut db = OffchainKv::new(Some(DB_PREFIX));
 		let validators_info = ValidatorsInfo::from_db(&mut db);
@@ -389,6 +420,7 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
+	// Send the validators update.
 	pub(crate) fn send_validators_update(
 		now: BlockNumberFor<T>,
 	) -> OffchainResult<impl Iterator<Item = OffchainResult<()>>> {
@@ -407,6 +439,7 @@ impl<T: Config> Pallet<T> {
 		}))
 	}
 
+	// Send a single validator update.
 	fn send_single_validators_update(
 		authority_index: u32,
 		key: T::AuthorityId,
@@ -470,30 +503,7 @@ impl<T: Config> Pallet<T> {
 			Keys::<T>::put(bounded_keys);
 		}
 	}
-
-	// // Set the authority keys (used for testing purposes).
-	// #[cfg(test)]
-	// fn set_keys(keys: Vec<T::AuthorityId>) {
-	// 	let bounded_keys = WeakBoundedVec::<_, T::MaxKeys>::try_from(keys)
-	// 		.expect("More than the maximum number of keys provided");
-	// 	Keys::<T>::put(bounded_keys);
-	// }
 }
-
-// impl<T: Config> GetValidatorsFromRuntime for Pallet<T> {
-// 	type ValidatorId = ValidatorId;
-// 	fn validators() -> Vec<ValidatorId> {
-// 		Validators::<T>::get()
-// 	}
-
-// 	fn is_validator(validator_id: ValidatorId) -> bool {
-// 		Validators::<T>::get().contains(&validator_id)
-// 	}
-
-// 	fn validator_count() -> u32 {
-// 		Validators::<T>::decode_len().unwrap_or_default() as u32
-// 	}
-// }
 
 impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
 	type Public = T::AuthorityId;

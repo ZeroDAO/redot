@@ -63,6 +63,7 @@ impl Client {
 		self.api = api;
 	}
 
+	/// Get the storage key for a given pallet and entry.
 	pub fn storage_key(
 		&self,
 		pallet_name: &str,
@@ -76,10 +77,10 @@ impl Client {
 
 #[async_trait::async_trait]
 pub trait ClientSync {
-	// 提交密钥
+	/// Submit a new key to the blockchain.
 	async fn new_key(&self, key: &VerifyingKey) -> Result<()>;
 
-	// 提交metadata
+	/// Submit metadata to the blockchain.
 	async fn submit_metadata<T: Encode + std::marker::Sync>(
 		&self,
 		metadata: &T,
@@ -88,7 +89,7 @@ pub trait ClientSync {
 		sign: &DkgSignature,
 	) -> Result<()>;
 
-	// 轮询密钥
+	/// Rotate the key for the validator.
 	async fn rotate_key(&self, key: &VerifyingKey, sign: &DkgSignature) -> Result<()>;
 }
 

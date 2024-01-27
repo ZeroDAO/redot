@@ -43,9 +43,8 @@ use std::collections::hash_map::Entry;
 use std::{collections::HashMap, fmt::Debug};
 use tracing::field::debug;
 
-/// The maximum number of connection retries.
+// The maximum number of connection retries.
 const MAX_RETRIES: u8 = 3;
-
 const LOG_TARGET: &str = "validator-network-worker";
 
 enum QueryResultSender {

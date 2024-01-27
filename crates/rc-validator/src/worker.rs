@@ -24,11 +24,13 @@ use rc_validator_network::{Arc, Service as ValidatorNetworkService};
 use redot_core_primitives::crypto::{DkgMessage, FrostDkg, SignMessage};
 use serde::Serialize;
 
+// Represents different types of responses that can be sent back from the Worker.
 enum QueryResultSender {
 	RotateKey(oneshot::Sender<Result<DkgVerifyingKey>>),
 	Sign(oneshot::Sender<Result<DkgSignature>>),
 }
 
+// Macro to handle sending responses back to the requestor.
 macro_rules! handle_send {
 	($sender_variant:ident, $msg:expr, $result:expr) => {
 		if let Some(QueryResultSender::$sender_variant(ch)) = $msg {
@@ -39,6 +41,10 @@ macro_rules! handle_send {
 	};
 }
 
+/// The Worker struct represents a worker in the network that handles various tasks.
+///
+/// It processes commands and messages related to DKG (Distributed Key Generation) and signing,
+/// interacting with the FrostDkg protocol for cryptographic operations.
 pub struct Worker {
 	network: Arc<ValidatorNetworkService>,
 	frost_dkg: FrostDkg,
@@ -47,10 +53,22 @@ pub struct Worker {
 	sign_sender: Option<QueryResultSender>,
 }
 
+// Topics for DKG and signing messages.
 const DKG_TOPIC: &str = "dkg_topic";
 const SIGN_TOPIC: &str = "sign_topic";
 
 impl Worker {
+	/// Creates a new Worker instance.
+	///
+	/// # Arguments
+	///
+	/// * `network` - Shared reference to the ValidatorNetworkService.
+	/// * `validator_id` - The unique identifier of the validator.
+	/// * `command_receiver` - Receiver for commands to be processed by the worker.
+	///
+	/// # Returns
+	///
+	/// A result containing either the new Worker instance or an error.
 	pub fn new(
 		network: Arc<ValidatorNetworkService>,
 		validator_id: ValidatorId,
@@ -61,6 +79,7 @@ impl Worker {
 		AnyOk(Self { network, frost_dkg, command_receiver, dkg_sender: None, sign_sender: None })
 	}
 
+	/// Main loop of the worker, handling incoming DKG and signing messages, and commands.
 	pub async fn run(&mut self) -> Result<()> {
 		let mut dkg_receiver = self.network.subscribe(DKG_TOPIC).await?.receiver;
 		let mut sign_receiver = self.network.subscribe(SIGN_TOPIC).await?.receiver;
@@ -80,6 +99,9 @@ impl Worker {
 		}
 	}
 
+	// Handles commands received by the worker.
+	//
+	// Processes various commands like key rotation, signing, setup, and validator management.
 	async fn handle_command(&mut self, command: Command) {
 		match command {
 			Command::RotateKey { sender } => {
@@ -120,6 +142,9 @@ impl Worker {
 		}
 	}
 
+    // Processes DKG-related messages received by the worker.
+    //
+    // Handles different stages of the DKG process including part1 and part2 messages.
 	async fn handle_dkg_message(&mut self, message: Vec<u8>) {
 		match serde_json::from_slice::<DkgMessage>(&message) {
 			Ok(message) => match message {
@@ -155,7 +180,10 @@ impl Worker {
 		}
 	}
 
-	async fn handle_sign_message(&mut self, message: Vec<u8>) {
+	// Processes signing-related messages received by the worker.
+    //
+    // Handles different stages of the signing process including part1 and part2 messages.
+    async fn handle_sign_message(&mut self, message: Vec<u8>) {
 		match serde_json::from_slice::<SignMessage>(&message) {
 			Ok(message) => match message {
 				SignMessage::SignPart1(sign_part1_message) => {
@@ -191,7 +219,10 @@ impl Worker {
 		}
 	}
 
-	async fn start_dkg(&mut self) {
+	// Initiates the DKG process.
+    //
+    // Starts the DKG process by generating and publishing the first part of the DKG message.
+    async fn start_dkg(&mut self) {
 		match self.frost_dkg.start_dkg() {
 			Ok(msg) => {
 				if let Err(e) = self.serialize_and_publish(DKG_TOPIC, &msg).await {
@@ -202,7 +233,10 @@ impl Worker {
 		}
 	}
 
-	async fn start_sign(&mut self, message: &[u8]) {
+	// Initiates the signing process for a given message.
+    //
+    // Starts the signing process by generating and publishing the first part of the signing message.
+    async fn start_sign(&mut self, message: &[u8]) {
 		match self.frost_dkg.start_sign(message) {
 			Ok(msg) => {
 				if let Err(e) = self.serialize_and_publish(SIGN_TOPIC, &msg).await {
@@ -213,6 +247,16 @@ impl Worker {
 		}
 	}
 
+	// Serializes and publishes a given message to a specified topic.
+    //
+    // # Arguments
+    //
+    // * `topic` - The topic to which the message will be published.
+    // * `message` - The message to be serialized and published.
+    //
+    // # Returns
+    //
+    // A result indicating success or failure of the operation.
 	async fn serialize_and_publish<T: Serialize>(&self, topic: &str, message: &T) -> Result<()> {
 		match serde_json::to_vec(message) {
 			Ok(encoded_msg) => self.network.publish(topic, encoded_msg).await.map_err(Into::into),

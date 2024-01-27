@@ -38,10 +38,12 @@ impl Debug for Service {
 }
 
 impl Service {
+	/// Creates a new `Service` instance.
 	pub(crate) fn new(to_worker: mpsc::Sender<Command>) -> Self {
 		Self { to_worker }
 	}
-	// 轮换密钥
+
+	/// 轮换密钥，返回新的验证者公钥
 	pub async fn rotate_key(&self) -> Result<DkgVerifyingKey> {
 		let (sender, receiver) = oneshot::channel();
 		self.to_worker
@@ -52,7 +54,7 @@ impl Service {
 		receiver.await.context("Failed to receive response from worker")?
 	}
 
-	// 启动签名服务
+	/// 启动一个签名服务，返回签名
 	pub async fn start_signing(&self, message: &[u8]) -> Result<DkgSignature> {
 		let (sender, receiver) = oneshot::channel();
 		self.to_worker
@@ -63,7 +65,7 @@ impl Service {
 		receiver.await.context("Failed to receive response from worker")?
 	}
 
-	// 设置参数
+	/// 设置验证者网络的阈值和参与者总数
 	pub async fn setup(&self, nt: (u16, u16)) -> Result<()> {
 		let (sender, receiver) = oneshot::channel();
 		self.to_worker
@@ -74,7 +76,7 @@ impl Service {
 		receiver.await.context("Failed to receive response from worker")?
 	}
 
-	// 删除验证者
+	/// 删除一个验证者，它将被排除在验证者网络之外
 	pub async fn remove_validators(&self, validators: Vec<ValidatorId>) -> Result<()> {
 		let (sender, receiver) = oneshot::channel();
 		self.to_worker
@@ -85,7 +87,7 @@ impl Service {
 		receiver.await.context("Failed to receive response from worker")?
 	}
 
-	// 添加验证者
+	/// 添加新的验证者，它将被包含在验证者网络中
 	pub async fn add_validators(&self, validators: Vec<ValidatorId>) -> Result<()> {
 		let (sender, receiver) = oneshot::channel();
 		self.to_worker

@@ -19,11 +19,11 @@ use cumulus_primitives_core::BlockT;
 #[cfg(feature = "std")]
 use cumulus_relay_chain_interface::RelayChainInterface;
 use melo_das_db::traits::DasKv;
+use melo_das_db::Vec;
 #[cfg(feature = "std")]
 use redot_core_primitives::GetValidatorsFromRuntime;
 #[cfg(feature = "std")]
 use std::sync::Arc;
-use melo_das_db::Vec;
 
 const STORE_KEY: &[u8] = b"redot_relay_validators";
 
@@ -138,6 +138,17 @@ impl ValidatorsInfo {
 		}
 	}
 
+	/// Gets a list of validators that have been removed compared to a previous set.
+	///
+	/// This method compares the current set of validators with a provided set,
+	/// and identifies which validators are present in the provided set but not in the current set.
+	///
+	/// # Arguments
+	/// * `old` - A slice of `ValidatorId` representing the previous set of validators.
+	///
+	/// # Returns
+	/// A vector of `ValidatorId` representing the validators that have been removed.
+	/// This vector will be empty if no validators have been removed.
 	pub fn get_removed_validators(&self, old: &[ValidatorId]) -> Vec<ValidatorId> {
 		old.iter()
 			.filter(|old_validator| !self.set.contains(old_validator))
@@ -145,10 +156,22 @@ impl ValidatorsInfo {
 			.collect::<Vec<_>>()
 	}
 
+	/// Gets a list of new validators that are present in the current set but not in a provided pending set.
+	///
+	/// This method is useful for identifying validators that have been recently added
+	/// to the current set, compared to a pending set of validators.
+	///
+	/// # Arguments
+	/// * `pending` - A slice of `ValidatorId` representing a pending set of validators,
+	///               typically validators that are about to be added or are under consideration.
+	///
+	/// # Returns
+	/// A vector of `ValidatorId` representing the new validators that are not present in the pending set.
+	/// This vector will be empty if there are no new validators compared to the pending set.
 	pub fn get_new_validators(&self, pending: &[ValidatorId]) -> Vec<ValidatorId> {
 		self.set
 			.iter()
-			.filter(|new_validator| pending.contains(new_validator))
+			.filter(|new_validator| !pending.contains(new_validator))
 			.cloned()
 			.collect::<Vec<_>>()
 	}

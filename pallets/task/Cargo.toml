@@ -20,17 +20,6 @@ frame-benchmarking = { git = "https://github.com/paritytech/substrate", default-
 frame-support = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0" }
 frame-system = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0" }
 
-# Redot
-# redot-core-primitives = { path = "../../crates/core-primitives", default-features = false}
-
-# [dev-dependencies]
-# serde = { version = "1.0.163" }
-
-# # Substrate
-# sp-core = { git = "https://github.com/paritytech/substrate",  branch = "polkadot-v1.0.0" }
-# sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0" }
-# sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0" }
-
 [features]
 default = ["std"]
 runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
@@ -40,7 +29,6 @@ std = [
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
-	# "redot-core-primitives/std",
 	"ed25519-consensus/std",
 ]
 try-runtime = [ "frame-support/try-runtime" ]
