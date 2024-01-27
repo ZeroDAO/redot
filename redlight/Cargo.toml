@@ -29,7 +29,7 @@ cumulus-primitives-core = { git = "https://github.com/paritytech/cumulus.git", b
 codec = { package = "parity-scale-codec", version = "3.2.2", features = ["derive"] }
 
 clap = { version = "4.0.9", features = ["derive","env"] }
-anyhow = "1.0.66"
+anyhow = "1.0.79"
 tracing = "0.1.37"
 tokio-stream = { version = "0.1" }
 tracing-subscriber = { version = "0.2.25", features = ["json"] }

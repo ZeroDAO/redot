@@ -24,7 +24,7 @@ path = "src/lib.rs"
 rand = "0.8.4"
 derive_more = "0.99.17"
 structopt = "0.3.25"
-anyhow = "1.0.66"
+anyhow = "1.0.79"
 tokio = { version = "1.28", features = ["process","macros", "time", "rt-multi-thread"] }
 frost-ed25519 = { version="1.0.0-rc.0"}
 futures = { version = "0.3.27", default-features = false, features = ["std"] }
