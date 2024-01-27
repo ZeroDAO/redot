@@ -19,7 +19,7 @@ log = "0.4"
 rand = "0.8"
 derive_more = "0.99.17"
 anyhow = "1.0.66"
-libp2p = { version = "0.50.0", features = ["dns", "metrics", "identify", "kad", "gossipsub", "macros", "mdns", "mplex", "noise", "ping", "tcp",  "tokio", "yamux", "websocket"] }
+libp2p = { version = "0.51.3", features = ["dns", "metrics", "identify", "kad", "gossipsub", "macros", "mdns", "mplex", "noise", "ping", "tcp",  "tokio", "yamux", "websocket"] }
 tokio-stream = { version = "0.1" }
 tokio = { version = "1.21.2", features = ["macros", "parking_lot", "rt-multi-thread", "sync", "time"] }
 prometheus-client = "0.18.1"
