@@ -24,7 +24,7 @@ rc-validator-network = { path = "../crates/rc-validator-network" }
 rc-validator = { path = "../crates/rc-validator" }
 
 subxt = { version = "0.31.0"}
-subxt-signer = { version = "0.31.0", features = ["subxt"] }
+subxt-signer = { version = "0.32.1", features = ["subxt"] }
 cumulus-primitives-core = { git = "https://github.com/paritytech/cumulus.git", branch = "polkadot-v1.0.0" }
 codec = { package = "parity-scale-codec", version = "3.2.2", features = ["derive"] }
 
