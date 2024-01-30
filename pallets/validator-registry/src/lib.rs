@@ -255,9 +255,6 @@ pub mod pallet {
 		pub fn registry(origin: OriginFor<T>, validator_id: ValidatorId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			// TODO 我们是否允许绑定其他 ID 还是直接使用 validator_id？
-
-			// 检查 ValidatorsStatus 中对应的 AuthorityStatus
 			let status = ValidatorsStatus::<T>::get(&validator_id);
 			match status {
 				AuthorityStatus::Block => Err(Error::<T>::InvalidKey)?,

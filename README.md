@@ -8,9 +8,9 @@ Redot serves as Polkadot's re-staking layer. It includes a specialized parachain
 - Neutrality: Redot imposes no restrictions on the nature of tasks. It supports tasks beyond data availability and accommodates various data availability layers.
 - Lightweight: Validator tasks should be sufficiently lightweight. Only information pertinent to the consensus layer should be incorporated into these tasks.
 
-## 模块
+## Modules
 
-Redot 包含了以下模块：
+Redot includes the following modules:
 
 * [core-primitives](./crates/core-primitives/):  Implements specific primitives for DKG, threshold signature encryption.
 * [rc-validator](./crates/rc-validator/): Depends on the validator network to execute different methods.
